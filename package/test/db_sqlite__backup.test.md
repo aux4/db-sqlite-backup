@@ -64,7 +64,7 @@ aux4 db sqlite execute --database ./backups/full.db --query "SELECT COUNT(*) AS 
 ```
 
 ```execute
-aux4 db sqlite backup --configFile config.yaml --config test --path ./backups/fromconfig.db | jq -r .status
+aux4 db sqlite backup --database ./bkptest.db --configFile config.yaml --config test --path ./backups/fromconfig.db | jq -r .status
 ```
 
 ```expect
