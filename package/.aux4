@@ -1,0 +1,115 @@
+{
+  "scope": "aux4",
+  "name": "db-sqlite-backup",
+  "version": "0.1.0",
+  "description": "backup and restore provider commands for the db:sqlite profile (online backup via VACUUM INTO)",
+  "license": "Apache-2.0",
+  "tags": [
+    "db",
+    "database",
+    "sqlite",
+    "backup",
+    "restore"
+  ],
+  "dependencies": [
+    "aux4/db-sqlite"
+  ],
+  "profiles": [
+    {
+      "name": "db:sqlite",
+      "commands": [
+        {
+          "name": "backup",
+          "execute": [
+            "set:fullpath=",
+            "when:${dir} && ${file}:set:fullpath=${dir}/${file}",
+            "set:backuppath=nvl(path, fullpath)",
+            "when:${backuppath}==:exit:1:Error: provide --path, or --dir and --file",
+            "exists(database) || { echo 'Error: database file not found: ${database}' >&2; exit 1; }",
+            "set:hasExt=!basename value(backuppath) | grep -c '\\.' || true",
+            "when:${hasExt}==0:set:backuppath=${backuppath}.db",
+            "mkdir -p \"$(dirname value(backuppath))\"",
+            "rm -f value(backuppath)",
+            "set:result=!aux4 db sqlite execute --database value(database) --query \"VACUUM INTO '${backuppath}'\" 2>&1 || true",
+            "set:vacError=!echo value(result) | jq -r '[.. | objects | .error? // empty] | first // \"\"' 2>/dev/null || true",
+            "test -z value(vacError) || { echo 'Error: sqlite backup failed:' value(vacError) >&2; rm -f value(backuppath); exit 1; }",
+            "test -s value(backuppath) || { echo 'Error: sqlite backup produced no output at' value(backuppath) >&2; rm -f value(backuppath); exit 1; }",
+            "set:bytes=!wc -c < value(backuppath) | tr -d ' '",
+            "set:checksum=!( shasum -a 256 value(backuppath) 2>/dev/null || sha256sum value(backuppath) ) | awk '{print $$1}'",
+            "echo '{\"path\":\"${backuppath}\",\"bytes\":${bytes},\"checksum\":\"${checksum}\",\"status\":\"success\",\"format\":\"sqlite-vacuum\"}'"
+          ],
+          "help": {
+            "text": "Backup the database to a compacted SQLite file using VACUUM INTO",
+            "variables": [
+              {
+                "name": "database",
+                "text": "Path to the SQLite database file to back up"
+              },
+              {
+                "name": "path",
+                "text": "Full path to write the backup file (takes precedence over --dir/--file). A '.db' extension is added when the path has none",
+                "default": ""
+              },
+              {
+                "name": "dir",
+                "text": "Directory to write the backup file (combined with --file)",
+                "default": ""
+              },
+              {
+                "name": "file",
+                "text": "File name for the backup (combined with --dir)",
+                "default": ""
+              }
+            ]
+          }
+        },
+        {
+          "name": "restore",
+          "execute": [
+            "set:fullpath=",
+            "when:${dir} && ${file}:set:fullpath=${dir}/${file}",
+            "set:backuppath=nvl(path, fullpath)",
+            "when:${backuppath}==:exit:1:Error: provide --path, or --dir and --file",
+            "exists(backuppath) || { echo 'Error: backup file not found: ${backuppath}' >&2; exit 1; }",
+            "set:integrityOk=yes",
+            "when:${integrityCheck}==true:set:integrityOk=!aux4 db sqlite execute --database value(backuppath) --query 'PRAGMA integrity_check' 2>/dev/null | grep -q '\"integrity_check\":\"ok\"' && echo yes || echo no",
+            "when:${integrityOk}==no:exit:1:Error: backup file failed PRAGMA integrity_check and was not restored",
+            "mkdir -p \"$(dirname value(database))\"",
+            "cp value(backuppath) value(database)",
+            "rm -f value(database)-wal value(database)-shm",
+            "echo '{\"path\":\"${backuppath}\",\"database\":\"${database}\",\"status\":\"success\",\"action\":\"restore\"}'"
+          ],
+          "help": {
+            "text": "Restore the database by replacing it with a SQLite backup file",
+            "variables": [
+              {
+                "name": "database",
+                "text": "Path to the SQLite database file to restore into (replaced by the backup)"
+              },
+              {
+                "name": "path",
+                "text": "Full path to the backup file to restore (takes precedence over --dir/--file)",
+                "default": ""
+              },
+              {
+                "name": "dir",
+                "text": "Directory containing the backup file (combined with --file)",
+                "default": ""
+              },
+              {
+                "name": "file",
+                "text": "File name of the backup (combined with --dir)",
+                "default": ""
+              },
+              {
+                "name": "integrityCheck",
+                "text": "Run PRAGMA integrity_check on the backup before replacing the database",
+                "default": "true"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
