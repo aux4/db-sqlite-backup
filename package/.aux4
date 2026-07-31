@@ -25,7 +25,7 @@
             "when:${dir} && ${file}:set:fullpath=${dir}/${file}",
             "set:backuppath=nvl(path, fullpath)",
             "when:${backuppath}==:exit:1:Error: provide --path, or --dir and --file",
-            "exists(database) || { echo 'Error: database file not found: ${database}' >&2; exit 1; }",
+            "exists(database) || { echo 'Error: database file not found:' value(database) >&2; exit 1; }",
             "set:hasExt=!basename value(backuppath) | grep -c '\\.' || true",
             "when:${hasExt}==0:set:backuppath=${backuppath}.db",
             "mkdir -p \"$(dirname value(backuppath))\"",
@@ -36,7 +36,9 @@
             "test -s value(backuppath) || { echo 'Error: sqlite backup produced no output at' value(backuppath) >&2; rm -f value(backuppath); exit 1; }",
             "set:bytes=!wc -c < value(backuppath) | tr -d ' '",
             "set:checksum=!( shasum -a 256 value(backuppath) 2>/dev/null || sha256sum value(backuppath) ) | awk '{print $$1}'",
-            "echo '{\"path\":\"${backuppath}\",\"bytes\":${bytes},\"checksum\":\"${checksum}\",\"status\":\"success\",\"format\":\"sqlite-vacuum\"}'"
+            "set:status=success",
+            "set:format=sqlite-vacuum",
+            "echo 'object(backuppath:path, bytes, checksum, status, format)'"
           ],
           "help": {
             "text": "Backup the database to a compacted SQLite file using VACUUM INTO",
@@ -70,14 +72,16 @@
             "when:${dir} && ${file}:set:fullpath=${dir}/${file}",
             "set:backuppath=nvl(path, fullpath)",
             "when:${backuppath}==:exit:1:Error: provide --path, or --dir and --file",
-            "exists(backuppath) || { echo 'Error: backup file not found: ${backuppath}' >&2; exit 1; }",
+            "exists(backuppath) || { echo 'Error: backup file not found:' value(backuppath) >&2; exit 1; }",
             "set:integrityOk=yes",
             "when:${integrityCheck}==true:set:integrityOk=!aux4 db sqlite execute --database value(backuppath) --query 'PRAGMA integrity_check' 2>/dev/null | grep -q '\"integrity_check\":\"ok\"' && echo yes || echo no",
             "when:${integrityOk}==no:exit:1:Error: backup file failed PRAGMA integrity_check and was not restored",
             "mkdir -p \"$(dirname value(database))\"",
             "cp value(backuppath) value(database)",
             "rm -f value(database)-wal value(database)-shm",
-            "echo '{\"path\":\"${backuppath}\",\"database\":\"${database}\",\"status\":\"success\",\"action\":\"restore\"}'"
+            "set:status=success",
+            "set:action=restore",
+            "echo 'object(backuppath:path, database, status, action)'"
           ],
           "help": {
             "text": "Restore the database by replacing it with a SQLite backup file",

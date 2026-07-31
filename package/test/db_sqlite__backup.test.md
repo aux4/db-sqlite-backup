@@ -34,7 +34,7 @@ aux4 db sqlite backup --database ./bkptest.db --path ./backups/full.db
 ```
 
 ```expect:regex
-\{"path":"\./backups/full\.db","bytes":\d+,"checksum":"[a-f0-9]{64}","status":"success","format":"sqlite-vacuum"\}
+\{"bytes":"\d+","checksum":"[a-f0-9]{64}","format":"sqlite-vacuum","path":"\./backups/full\.db","status":"success"\}
 ```
 
 ### should create a readable SQLite backup
@@ -135,7 +135,7 @@ aux4 db sqlite restore --database ./bkptest.db --path ./backups/full.db
 ```
 
 ```expect
-{"path":"./backups/full.db","database":"./bkptest.db","status":"success","action":"restore"}
+{"action":"restore","database":"./bkptest.db","path":"./backups/full.db","status":"success"}
 ```
 
 ### should bring the rows back
