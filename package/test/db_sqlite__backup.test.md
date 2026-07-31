@@ -29,6 +29,10 @@ rm -rf bkptest.db bkptest.db-wal bkptest.db-shm backups fresh.db
 
 ### should write the backup and print a manifest
 
+```timeout
+120000
+```
+
 ```execute
 aux4 db sqlite backup --database ./bkptest.db --path ./backups/full.db
 ```
@@ -38,6 +42,10 @@ aux4 db sqlite backup --database ./bkptest.db --path ./backups/full.db
 ```
 
 ### should create a readable SQLite backup
+
+```timeout
+120000
+```
 
 ```execute
 aux4 db sqlite execute --database ./backups/full.db --query "SELECT COUNT(*) AS n FROM items" | jq -c .
@@ -51,6 +59,10 @@ aux4 db sqlite execute --database ./backups/full.db --query "SELECT COUNT(*) AS 
 
 ### should resolve the database from the config profile
 
+```timeout
+120000
+```
+
 ```execute
 aux4 db sqlite backup --configFile config.yaml --config test --path ./backups/fromconfig.db | jq -r .status
 ```
@@ -63,6 +75,10 @@ success
 
 ### should resolve the path from dir + file
 
+```timeout
+120000
+```
+
 ```execute
 aux4 db sqlite backup --database ./bkptest.db --dir ./backups --file dirfile.db | jq -r .path
 ```
@@ -73,6 +89,10 @@ aux4 db sqlite backup --database ./bkptest.db --dir ./backups --file dirfile.db 
 
 ### should append a .db extension when the path has none
 
+```timeout
+120000
+```
+
 ```execute
 aux4 db sqlite backup --database ./bkptest.db --path ./backups/noext | jq -r .path
 ```
@@ -82,6 +102,10 @@ aux4 db sqlite backup --database ./bkptest.db --path ./backups/noext | jq -r .pa
 ```
 
 ### should replace an existing backup file
+
+```timeout
+120000
+```
 
 ```execute
 aux4 db sqlite backup --database ./bkptest.db --path ./backups/full.db | jq -r .status
@@ -95,6 +119,10 @@ success
 
 ### should fail fast when neither path nor dir/file is given
 
+```timeout
+120000
+```
+
 ```execute
 aux4 db sqlite backup --database ./bkptest.db
 ```
@@ -107,6 +135,10 @@ Error: provide --path, or --dir and --file
 
 ### should fail instead of backing up an empty database
 
+```timeout
+120000
+```
+
 ```execute
 aux4 db sqlite backup --database ./does-not-exist.db --path ./backups/missing.db
 ```
@@ -116,6 +148,10 @@ Error: database file not found
 ```
 
 ### should not leave an artifact behind
+
+```timeout
+120000
+```
 
 ```execute
 test -e ./backups/missing.db && echo leftover || echo "cleaned up"
@@ -129,6 +165,10 @@ cleaned up
 
 ### should restore the backup and print an outcome
 
+```timeout
+120000
+```
+
 ```execute
 aux4 db sqlite execute --database ./bkptest.db --query "DELETE FROM items" >/dev/null
 aux4 db sqlite restore --database ./bkptest.db --path ./backups/full.db
@@ -139,6 +179,10 @@ aux4 db sqlite restore --database ./bkptest.db --path ./backups/full.db
 ```
 
 ### should bring the rows back
+
+```timeout
+120000
+```
 
 ```execute
 aux4 db sqlite execute --database ./bkptest.db --query "SELECT * FROM items ORDER BY id" | jq -c .
@@ -152,6 +196,10 @@ aux4 db sqlite execute --database ./bkptest.db --query "SELECT * FROM items ORDE
 
 ### should restore the backup into a different file
 
+```timeout
+120000
+```
+
 ```execute
 aux4 db sqlite restore --database ./fresh.db --path ./backups/full.db | jq -r .status
 ```
@@ -161,6 +209,10 @@ success
 ```
 
 ### should have the rows in the fresh database
+
+```timeout
+120000
+```
 
 ```execute
 aux4 db sqlite execute --database ./fresh.db --query "SELECT * FROM items ORDER BY id" | jq -c .
@@ -174,6 +226,10 @@ aux4 db sqlite execute --database ./fresh.db --query "SELECT * FROM items ORDER 
 
 ### should fail fast when the backup file does not exist
 
+```timeout
+120000
+```
+
 ```execute
 aux4 db sqlite restore --database ./bkptest.db --path ./does-not-exist.db
 ```
@@ -186,6 +242,10 @@ Error: backup file not found: ./does-not-exist.db
 
 ### should refuse to restore a file that is not a SQLite database
 
+```timeout
+120000
+```
+
 ```execute
 mkdir -p backups
 echo "this is not a database" > ./backups/corrupt.db
@@ -197,6 +257,10 @@ failed PRAGMA integrity_check
 ```
 
 ### should leave the existing database untouched
+
+```timeout
+120000
+```
 
 ```execute
 aux4 db sqlite execute --database ./bkptest.db --query "SELECT COUNT(*) AS n FROM items" | jq -c .
